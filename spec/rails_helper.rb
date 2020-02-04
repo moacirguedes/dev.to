@@ -84,6 +84,15 @@ RSpec.configure do |config|
     Sidekiq::Worker.clear_all # worker jobs shouldn't linger around between tests
   end
 
+  config.before :suite do
+    Search::Cluster.setup_indexes
+  end
+
+  config.around(:each, elasticsearch: true) do |example|
+    Search::Cluster.recreate_indexes
+    example.run
+  end
+
   config.after do
     SiteConfig.clear_cache
   end

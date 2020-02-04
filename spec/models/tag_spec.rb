@@ -69,4 +69,28 @@ RSpec.describe Tag, type: :model do
       tag.save
     end
   end
+
+  describe "#index_to_elasticsearch" do
+    it "enqueues job to index tag to elasticsearch" do
+      sidekiq_assert_enqueued_with(job: Search::TagEsIndexWorker, args: [tag.id]) do
+        tag.index_to_elasticsearch
+      end
+    end
+  end
+
+  describe "#index_to_elasticsearch_inline" do
+    it "indexed tag to elasticsearch inline" do
+      allow(Search::Tag).to receive(:index)
+      tag.index_to_elasticsearch_inline
+      expect(Search::Tag).to have_received(:index).with(tag.id, hash_including(:id, :name))
+    end
+  end
+
+  describe "#after_commit" do
+    it "enqueues job to index tag to elasticsearch" do
+      sidekiq_assert_enqueued_with(job: Search::TagEsIndexWorker, args: [tag.id]) do
+        tag.save
+      end
+    end
+  end
 end
